@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>WebGIS Pro - Manajemen Rute Truk Sampah Semarang</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet Routing Machine CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Light Mode Variables */
+        body.light-mode {
+            --bg-primary: #f0f2f5;
+            --bg-secondary: #ffffff;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --header-bg: linear-gradient(135deg, #1e3c2c, #2a5a3a);
+            --sidebar-bg: rgba(255, 255, 255, 0.98);
+            --card-bg: #ffffff;
+            --border-color: #e5e7eb;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Dark Mode Variables */
+        body.dark-mode {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --header-bg: linear-gradient(135deg, #0f172a, #1e293b);
+            --sidebar-bg: rgba(30, 41, 59, 0.98);
+            --card-bg: #334155;
+            --border-color: #475569;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            background: var(--bg-primary);
+        }
+
+        /* Header - Responsive */
+        .header {
+            background: var(--header-bg);
+            color: white;
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .logo-area h1 {
+            font-size: 1rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .logo-area p {
+            font-size: 0.6rem;
+            opacity: 0.85;
+            margin-top: 2px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-icon {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-icon:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-save-header {
+            background: #27ae60 !important;
+        }
+
+        .btn-save-header:hover {
+            background: #219a52 !important;
+        }
+
+        .stats {
+            display: flex;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 4px 12px;
+            border-radius: 40px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.55rem;
+            opacity: 0.8;
+        }
+
+        .stat-value {
+            font-weight: 800;
+            font-size: 0.85rem;
+        }
+
+        /* Main Container */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            padding: 8px;
+            gap: 8px;
+        }
+
+        /* Sidebar - Responsive */
+        .sidebar {
+            width: 320px;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .sidebar-header {
+            padding: 12px;
+            background: linear-gradient(135deg, #f59e0b, #e67e22);
+            border-radius: 16px 16px 0 0;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header h3 {
+            font-size: 0.9rem;
+        }
+
+        .sidebar-header p {
+            font-size: 0.7rem;
+            opacity: 0.9;
+        }
+
+        /* Filter Section */
+        .filter-section {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .filter-row select,
+        .filter-row input {
+            flex: 1;
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+        }
+
+        .btn-sm {
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            background: #f59e0b;
+            color: white;
+            font-weight: 600;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .btn-sm:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+        }
+
+        /* CRUD Buttons */
+        .crud-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .btn-crud {
+            flex: 1;
+            padding: 6px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+
+        .btn-crud:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+        }
+
+        .btn-add {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-edit {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-delete {
+            background: #e74c3c;
+            color: white;
+        }
+
+        /* TPS List - Scrollable area */
+        .tps-list {
+            flex: 1;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        .tps-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            color: var(--text-primary);
+        }
+
+        .tps-card:hover {
+            border-color: #f59e0b;
+            transform: translateX(3px);
+        }
+
+        .tps-name {
+            font-weight: 700;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tps-address {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            margin: 4px 0;
+        }
+
+        .tps-card small {
+            font-size: 0.6rem;
+        }
+
+        .tps-checkbox {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #f59e0b;
+        }
+
+        /* Legend */
+        .legend {
+            padding: 10px;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.65rem;
+            flex-shrink: 0;
+            background: var(--sidebar-bg);
+        }
+
+        .legend h4 {
+            margin-bottom: 6px;
+            font-size: 0.7rem;
+            color: var(--text-primary);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+
+        .legend-item span {
+            color: var(--text-primary);
+            font-size: 0.65rem;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        /* Map Container */
+        #map {
+            flex: 1;
+            border-radius: 16px;
+            z-index: 1;
+            box-shadow: var(--shadow);
+        }
+
+        .multi-route-panel {
+            background: var(--card-bg);
+            padding: 10px;
+            margin-top: 8px;
+            border-radius: 10px;
+        }
+
+        .multi-route-panel small {
+            font-size: 0.6rem;
+        }
+
+        /* Responsive untuk HP */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 280px;
+                position: absolute;
+                left: 8px;
+                top: 70px;
+                height: calc(100vh - 80px);
+                z-index: 1000;
+                transform: translateX(-120%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            #map {
+                width: 100%;
+            }
+
+            .stats {
+                display: none;
+            }
+            
+            .header-actions {
+                margin-top: 0;
+            }
+
+            .logo-area h1 {
+                font-size: 0.85rem;
+            }
+
+            .logo-area p {
+                display: none;
+            }
+
+            .btn-icon {
+                padding: 5px 10px;
+                font-size: 0.7rem;
+            }
+        }
+
+        /* Tombol toggle sidebar untuk HP */
+        .menu-toggle {
+            display: none;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: block;
+            }
+        }
+
+        /* Scrollbar styling */
+        .tps-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .tps-list::-webkit-scrollbar-track {
+            background: var(--border-color);
+            border-radius: 10px;
+        }
+
+        .tps-list::-webkit-scrollbar-thumb {
+            background: #f59e0b;
+            border-radius: 10px;
+        }
+
+        /* Dark mode fixes */
+        body.dark-mode .legend,
+        body.dark-mode .legend h4,
+        body.dark-mode .legend-item span {
+            color: #f1f5f9 !important;
+        }
+
+        body.dark-mode .legend {
+            background: rgba(30, 41, 59, 0.9);
+        }
+
+        body.dark-mode .tps-address,
+        body.dark-mode small {
+            color: #cbd5e1 !important;
+        }
+
+        body.dark-mode select,
+        body.dark-mode input {
+            background: #1e293b;
+            color: #f1f5f9;
+            border-color: #475569;
+        }
+
+        body.dark-mode select option {
+            background: #1e293b;
+            color: #f1f5f9;
+        }
+
+        /* Animasi pulse untuk marker */
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(52, 152, 219, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(52, 152, 219, 0);
+            }
+        }
+
+        .user-location-marker div {
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Badge untuk unsaved changes */
+        .unsaved-badge {
+            background: #e74c3c;
+            padding: 2px 6px;
+            border-radius: 20px;
+            font-size: 8px;
+            margin-left: 6px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body class="light-mode">
+    <div class="header">
+        <button class="menu-toggle" id="menuToggleBtn">
+            <i class="fas fa-bars"></i> Menu
+        </button>
+        <div class="logo-area">
+            <h1><i class="fas fa-truck-fast"></i> WasteRoute Pro</h1>
+            <p>Semarang | Optimasi Rute TPS</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn-icon btn-save-header" id="saveDataHeaderBtn"><i class="fas fa-save"></i> Simpan</button>
+            <button class="btn-icon" id="locationBtn"><i class="fas fa-location-dot"></i> Lokasi</button>
+            <button class="btn-icon" id="darkModeBtn"><i class="fas fa-moon"></i> Mode</button>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-label">TPS</div>
+                    <div class="stat-value" id="totalTPS">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Pilih</div>
+                    <div class="stat-value" id="selectedCount">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3><i class="fas fa-dumpster"></i> Manajemen TPS</h3>
+                <p>Tambah/Edit/Hapus | Centang untuk rute</p>
+            </div>
+            <div class="filter-section">
+                <div class="filter-row">
+                    <select id="sortBy">
+                        <option value="name">Sortir: Nama A-Z</option>
+                        <option value="distance">Sortir: Jarak Terdekat</option>
+                        <option value="distanceFar">Sortir: Jarak Terjauh</option>
+                    </select>
+                    <input type="text" id="searchInput" placeholder="🔍 Cari TPS...">
+                </div>
+                <div class="crud-buttons">
+                    <button class="btn-crud btn-add" id="addTpsBtn"><i class="fas fa-plus"></i> Tambah</button>
+                    <button class="btn-crud btn-edit" id="editTpsBtn"><i class="fas fa-edit"></i> Edit</button>
+                    <button class="btn-crud btn-delete" id="deleteTpsBtn"><i class="fas fa-trash"></i> Hapus</button>
+                </div>
+                <div class="multi-route-panel">
+                    <button class="btn-sm" id="multiRouteBtn" style="width:100%; background:#e67e22;">
+                        <i class="fas fa-route"></i> 🚛 Optimasi Rute Multi-TPS
+                    </button>
+                    <small style="display:block; margin-top:6px; text-align:center;">✅ Centang TPS yang ingin dilewati</small>
+                </div>
+            </div>
+            <div class="tps-list" id="tpsListContainer">
+                <div style="text-align:center; padding:20px;">Memuat data TPS...</div>
+            </div>
+            <div class="legend">
+                <h4><i class="fas fa-map"></i> Legenda</h4>
+                <div class="legend-item">
+                    <div class="legend-color" style="background:#27ae60;"></div>
+                    <span>TPS (Lokasi Sampah)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background:#e74c3c;"></div>
+                    <span>TPA Jatibarang</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background:#f59e0b;"></div>
+                    <span>Rute Optimal</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background:#3498db;"></div>
+                    <span>📍 Live Tracking</span>
+                </div>
+            </div>
+        </div>
+        <div id="map"></div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet Routing Machine -->
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script>
+        // ======================= DATA TPS =========================
+        const TPA = {
+            lat: -7.021531,
+            lng: 110.358348,
+            name: "TPA Jatibarang"
+        };
+
+        const STORAGE_KEY = "wasteRoute_tpsData";
+        const NEXT_ID_KEY = "wasteRoute_nextId";
+
+        const defaultTpsData = [
+            { id: 1, name: "TPS Panggung Lor", lat: -6.954282, lng: 110.401332, address: "Panggung Lor, Kec. Semarang Utara" },
+            { id: 2, name: "TPS Pedurungan", lat: -7.022204, lng: 110.478043, address: "Pedurungan Kidul, Kec. Pedurungan" },
+            { id: 3, name: "TPS Sambirejo", lat: -6.983480, lng: 110.441832, address: "Gayamsari, Kec. Gayamsari" },
+            { id: 4, name: "TPS Barito", lat: -6.984681, lng: 110.440261, address: "Jl. Barito, Kec. Semarang Timur" },
+            { id: 5, name: "TPS Genuksari", lat: -6.966429, lng: 110.477638, address: "Genuk, Kec. Genuk" },
+            { id: 6, name: "TPS Rasamala", lat: -7.069977, lng: 110.416965, address: "Srondol, Kec. Banyumanik" },
+            { id: 7, name: "TPS Ngesrep", lat: -7.034298, lng: 110.418125, address: "Kel. Ngesrep, Kec. Banyumanik" },
+            { id: 8, name: "TPS Magersari", lat: -7.085172, lng: 110.360115, address: "Gunung Pati, Kec. Gunung Pati" },
+            { id: 9, name: "TPS Miroto", lat: -6.982051, lng: 110.417308, address: "Sekayu, Kec. Semarang Tengah" },
+            { id: 10, name: "TPS Sawah Besar", lat: -6.964032, lng: 110.4498879, address: "Kaligawe, Kec. Gayamsari" },
+            { id: 11, name: "TPS Tembalang", lat: -7.059352, lng: 110.447703, address: "Bulusan, Kec. Tembalang" },
+            { id: 12, name: "TPS Salamanmloyo", lat: -6.986212, lng: 110.393067, address: "Manyaran, Kec. Semarang Barat" },
+            { id: 13, name: "TPS Pasar Bandarjo", lat: -7.123954, lng: 110.407786, address: "Bandarjo, Kec. Ungaran" },
+            { id: 14, name: "TPS Kasipah", lat: -7.020354, lng: 110.426080, address: "Jatingaleh, Kec. Candisari" },
+            { id: 15, name: "TPS Lamper Kidul", lat: -7.0419, lng: 110.4512, address: "Lamper, Kec. Semarang Selatan" }
+        ];
+
+        // Variabel global
+        let map;
+        let routingControl = null;
+        let markersLayer;
+        let tpsMarkers = {};
+        let userLocationMarker = null;
+        let selectedTpsIds = new Set();
+        let currentUserLocation = null;
+        let routeFromUserActive = false;
+        let watchId = null;
+        let isTrackingActive = false;
+        let hasUnsavedChanges = false;
+        let tpsData = [];
+        let nextId = 16;
+
+        // Sidebar toggle untuk HP
+        const menuToggleBtn = document.getElementById('menuToggleBtn');
+        const sidebar = document.getElementById('sidebar');
+        
+        if (menuToggleBtn) {
+            menuToggleBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('open');
+            });
+            
+            // Tutup sidebar saat klik di luar (untuk HP)
+            document.addEventListener('click', (e) => {
+                if (window.innerWidth <= 768) {
+                    if (!sidebar.contains(e.target) && !menuToggleBtn.contains(e.target)) {
+                        sidebar.classList.remove('open');
+                    }
+                }
+            });
+        }
+
+        // ======================= FUNGSI LOAD/SAVE STORAGE =======================
+        function loadDataFromStorage() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            const savedNextId = localStorage.getItem(NEXT_ID_KEY);
+            
+            if (savedData) {
+                tpsData = JSON.parse(savedData);
+                nextId = savedNextId ? parseInt(savedNextId) : Math.max(...tpsData.map(t => t.id), 0) + 1;
+            } else {
+                tpsData = [...defaultTpsData];
+                nextId = 16;
+                saveDataToStorage(false);
+            }
+            
+            window.tpsData = tpsData;
+            window.nextId = nextId;
+        }
+
+        function saveDataToStorage(requirePassword = true) {
+            return new Promise((resolve, reject) => {
+                const doSave = () => {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(tpsData));
+                    localStorage.setItem(NEXT_ID_KEY, nextId.toString());
+                    window.tpsData = tpsData;
+                    window.nextId = nextId;
+                    resolve(true);
+                };
+                
+                if (!requirePassword) {
+                    doSave();
+                    return;
+                }
+                
+                Swal.fire({
+                    title: '🔒 Simpan Data Permanen',
+                    html: `
+                        <div style="text-align: center;">
+                            <i class="fas fa-shield-alt" style="font-size: 48px; color: #f59e0b; margin-bottom: 15px;"></i>
+                            <p style="margin-bottom: 10px;">Masukkan password untuk menyimpan perubahan data TPS</p>
+                            <input type="password" id="savePassword" class="swal2-input" placeholder="Password" style="text-align: center;">
+                        </div>
+                    `,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fas fa-save"></i> Simpan',
+                    cancelButtonText: 'Batal',
+                    preConfirm: () => {
+                        const password = document.getElementById('savePassword').value;
+                        if (password === "ayam jago") {
+                            return true;
+                        } else {
+                            Swal.showValidationMessage('❌ Password salah! Data TIDAK tersimpan.');
+                            return false;
+                        }
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        doSave();
+                        Swal.fire({
+                            title: '✅ Berhasil!',
+                            text: 'Data TPS telah disimpan secara permanen',
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        reject(false);
+                        Swal.fire({
+                            title: '⚠️ Penyimpanan Dibatalkan',
+                            text: 'Perubahan data TPS TIDAK tersimpan secara permanen',
+                            icon: 'warning',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    }
+                });
+            });
+        }
+
+        function resetToDefaultData() {
+            Swal.fire({
+                title: '⚠️ Reset Data',
+                text: 'Apakah Anda yakin ingin mereset semua data TPS ke default?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                confirmButtonText: '<i class="fas fa-trash"></i> Ya, Reset!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: '🔒 Konfirmasi Reset',
+                        html: '<input type="password" id="resetPassword" class="swal2-input" placeholder="Masukkan password">',
+                        preConfirm: () => {
+                            const password = document.getElementById('resetPassword').value;
+                            if (password === "ayam jago") {
+                                return true;
+                            } else {
+                                Swal.showValidationMessage('Password salah!');
+                                return false;
+                            }
+                        }
+                    }).then((res) => {
+                        if (res.isConfirmed) {
+                            tpsData = [...defaultTpsData];
+                            nextId = 16;
+                            saveDataToStorage(false);
+                            selectedTpsIds.clear();
+                            updateAllMarkers();
+                            renderSidebar();
+                            clearRoute();
+                            hasUnsavedChanges = false;
+                            clearUnsavedIndicator();
+                            Swal.fire('Berhasil!', 'Data telah direset ke default', 'success');
+                        }
+                    });
+                }
+            });
+        }
+
+        // ======================= FUNGSI MAP =======================
+        function initMap() {
+            map = L.map('map').setView([-7.02, 110.41], 12);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                subdomains: 'abcd',
+                maxZoom: 19,
+                minZoom: 10
+            }).addTo(map);
+
+            const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Esri, DigitalGlobe',
+                maxZoom: 18
+            });
+            const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: 'OpenStreetMap'
+            });
+            
+            const baseMaps = {
+                "🎨 Peta Berwarna": L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'),
+                "🛰️ Satelit": satelliteLayer,
+                "🗺️ Street Map": streetLayer
+            };
+            L.control.layers(baseMaps).addTo(map);
+
+            const tpaIcon = L.divIcon({
+                html: '<div style="background: linear-gradient(135deg, #e74c3c, #c0392b); width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 2px solid white;"><i class="fas fa-industry" style="color:white; font-size: 14px;"></i></div>',
+                iconSize: [34, 34]
+            });
+            L.marker([TPA.lat, TPA.lng], { icon: tpaIcon })
+                .bindPopup('<b>🏭 TPA Jatibarang</b><br>Tempat Pemrosesan Akhir Sampah')
+                .addTo(map);
+
+            markersLayer = L.layerGroup();
+            markersLayer.addTo(map);
+            updateAllMarkers();
+        }
+
+        function updateAllMarkers() {
+            markersLayer.clearLayers();
+            tpsMarkers = {};
+            
+            tpsData.forEach(tps => {
+                const icon = L.divIcon({
+                    html: '<div style="background: linear-gradient(135deg, #27ae60, #2ecc71); width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.2); border: 2px solid white;"><i class="fas fa-trash-alt" style="color:white; font-size: 12px;"></i></div>',
+                    iconSize: [28, 28]
+                });
+                const marker = L.marker([tps.lat, tps.lng], { icon })
+                    .bindPopup(`<b>🗑️ ${tps.name}</b><br>📍 ${tps.address}`);
+                marker.addTo(markersLayer);
+                tpsMarkers[tps.id] = marker;
+            });
+        }
+
+        function clearRoute() {
+            if (routingControl) {
+                map.removeControl(routingControl);
+                routingControl = null;
+            }
+        }
+
+        function showMultiRoute(waypoints) {
+            clearRoute();
+            if (waypoints.length < 2) return;
+            
+            routingControl = L.Routing.control({
+                waypoints: waypoints,
+                router: L.Routing.osrmv1({
+                    serviceUrl: 'https://router.project-osrm.org/route/v1',
+                    profile: 'driving'
+                }),
+                lineOptions: {
+                    styles: [{ color: '#f59e0b', weight: 5, opacity: 0.9, dashArray: '8, 8' }]
+                },
+                show: true,
+                collapsible: true,
+                addWaypoints: false,
+                draggableWaypoints: false,
+                fitSelectedRoutes: true,
+                showDistances: true,
+                showTotalTime: true
+            }).addTo(map);
+        }
+
+        function showRouteFromUserToSelectedTPS() {
+            if (!currentUserLocation) {
+                Swal.fire({
+                    title: 'Lokasi tidak ditemukan',
+                    text: 'Silakan klik tombol "Lokasi Saya" terlebih dahulu',
+                    icon: 'info'
+                });
+                return;
+            }
+            
+            if (selectedTpsIds.size === 0) {
+                Swal.fire({
+                    title: 'Tidak ada TPS dipilih',
+                    text: 'Silakan pilih minimal 1 TPS terlebih dahulu',
+                    icon: 'info'
+                });
+                return;
+            }
+            
+            const selectedTpsList = tpsData.filter(t => selectedTpsIds.has(t.id));
+            const waypoints = [
+                L.latLng(currentUserLocation.lat, currentUserLocation.lng),
+                ...selectedTpsList.map(t => L.latLng(t.lat, t.lng)),
+                L.latLng(TPA.lat, TPA.lng)
+            ];
+            
+            clearRoute();
+            
+            routingControl = L.Routing.control({
+                waypoints: waypoints,
+                router: L.Routing.osrmv1({
+                    serviceUrl: 'https://router.project-osrm.org/route/v1',
+                    profile: 'driving'
+                }),
+                lineOptions: {
+                    styles: [{ color: '#3498db', weight: 5, opacity: 0.9, dashArray: '5, 10' }]
+                },
+                show: true,
+                collapsible: true,
+                addWaypoints: false,
+                draggableWaypoints: false,
+                fitSelectedRoutes: true,
+                showDistances: true,
+                showTotalTime: true,
+                totalTimeFormatter: function(durationSec) {
+                    const minutes = Math.floor(durationSec / 60);
+                    return `${minutes} menit`;
+                },
+                createMarker: function() { return null; }
+            }).addTo(map);
+            
+            Swal.fire({
+                title: '🚛 Rute dari Lokasi Anda',
+                html: `<strong>${selectedTpsList.length} TPS</strong> menuju TPA`,
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }
+
+        function resetToNormalRoute() {
+            clearRoute();
+            Swal.fire('Rute direset', 'Silakan pilih TPS untuk rute baru', 'info');
+        }
+
+        // ======================= RENDER SIDEBAR =======================
+        function renderSidebar() {
+            let filtered = [...tpsData];
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            if (search) {
+                filtered = filtered.filter(t => 
+                    t.name.toLowerCase().includes(search) || 
+                    t.address.toLowerCase().includes(search)
+                );
+            }
+
+            const sortBy = document.getElementById('sortBy').value;
+            filtered.sort((a, b) => {
+                if (sortBy === 'name') return a.name.localeCompare(b.name);
+                if (sortBy === 'distance') {
+                    const distA = haversineDistance(a.lat, a.lng, TPA.lat, TPA.lng);
+                    const distB = haversineDistance(b.lat, b.lng, TPA.lat, TPA.lng);
+                    return distA - distB;
+                }
+                if (sortBy === 'distanceFar') {
+                    const distA = haversineDistance(a.lat, a.lng, TPA.lat, TPA.lng);
+                    const distB = haversineDistance(b.lat, b.lng, TPA.lat, TPA.lng);
+                    return distB - distA;
+                }
+                return 0;
+            });
+
+            const container = document.getElementById('tpsListContainer');
+            container.innerHTML = '';
+            
+            filtered.forEach(tps => {
+                const dist = haversineDistance(tps.lat, tps.lng, TPA.lat, TPA.lng);
+                const isSelected = selectedTpsIds.has(tps.id);
+                const card = document.createElement('div');
+                card.className = 'tps-card';
+                card.innerHTML = `
+                    <div class="tps-name">
+                        <label style="cursor:pointer; display:flex; gap:8px; align-items:center; width:100%;">
+                            <input type="checkbox" class="tps-checkbox" data-id="${tps.id}" ${isSelected ? 'checked' : ''}>
+                            <strong><i class="fas fa-location-dot"></i> ${tps.name}</strong>
+                        </label>
+                    </div>
+                    <div class="tps-address">${tps.address}</div>
+                    <small>📏 Jarak ke TPA: ${dist} km</small>
+                `;
+                const checkbox = card.querySelector('.tps-checkbox');
+                checkbox.addEventListener('change', (e) => {
+                    e.stopPropagation();
+                    if (e.target.checked) {
+                        selectedTpsIds.add(tps.id);
+                    } else {
+                        selectedTpsIds.delete(tps.id);
+                    }
+                    document.getElementById('selectedCount').innerText = selectedTpsIds.size;
+                });
+                container.appendChild(card);
+            });
+            
+            document.getElementById('totalTPS').innerText = tpsData.length;
+            document.getElementById('selectedCount').innerText = selectedTpsIds.size;
+        }
+
+        function haversineDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2 +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLng / 2) ** 2;
+            return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1);
+        }
+
+        // ======================= CRUD FUNCTIONS =======================
+        function markUnsavedChanges() {
+            hasUnsavedChanges = true;
+            const header = document.querySelector('.sidebar-header p');
+            if (header && !header.querySelector('.unsaved-badge')) {
+                header.innerHTML += ' <span class="unsaved-badge">⚠️ Belum Disimpan</span>';
+            }
+        }
+
+        function clearUnsavedIndicator() {
+            hasUnsavedChanges = false;
+            const badge = document.querySelector('.unsaved-badge');
+            if (badge) badge.remove();
+        }
+
+        function addTps() {
+            Swal.fire({
+                title: 'Tambah TPS Baru',
+                html: `<input id="name" class="swal2-input" placeholder="Nama TPS">
+                       <input id="lat" class="swal2-input" placeholder="Latitude">
+                       <input id="lng" class="swal2-input" placeholder="Longitude">
+                       <input id="addr" class="swal2-input" placeholder="Alamat lengkap">`,
+                preConfirm: () => {
+                    const name = document.getElementById('name').value;
+                    const lat = parseFloat(document.getElementById('lat').value);
+                    const lng = parseFloat(document.getElementById('lng').value);
+                    const addr = document.getElementById('addr').value;
+                    if (!name || isNaN(lat) || isNaN(lng)) {
+                        Swal.showValidationMessage('Isi semua data dengan benar');
+                    }
+                    return { name, lat, lng, address: addr };
+                }
+            }).then(res => {
+                if (res.isConfirmed) {
+                    tpsData.push({
+                        id: nextId++,
+                        ...res.value
+                    });
+                    updateAllMarkers();
+                    renderSidebar();
+                    markUnsavedChanges();
+                    Swal.fire('Berhasil!', 'TPS baru ditambahkan', 'success');
+                }
+            });
+        }
+
+        function editTps() {
+            if (selectedTpsIds.size !== 1) {
+                return Swal.fire('Peringatan', 'Pilih tepat 1 TPS untuk diedit', 'info');
+            }
+            const tps = tpsData.find(t => t.id === Array.from(selectedTpsIds)[0]);
+            Swal.fire({
+                title: 'Edit TPS',
+                html: `<input id="name" class="swal2-input" value="${tps.name}">
+                       <input id="lat" class="swal2-input" value="${tps.lat}">
+                       <input id="lng" class="swal2-input" value="${tps.lng}">
+                       <input id="addr" class="swal2-input" value="${tps.address}">`,
+                preConfirm: () => {
+                    return {
+                        name: document.getElementById('name').value,
+                        lat: parseFloat(document.getElementById('lat').value),
+                        lng: parseFloat(document.getElementById('lng').value),
+                        address: document.getElementById('addr').value
+                    };
+                }
+            }).then(res => {
+                if (res.isConfirmed) {
+                    Object.assign(tps, res.value);
+                    updateAllMarkers();
+                    renderSidebar();
+                    markUnsavedChanges();
+                    Swal.fire('Berhasil!', 'Data TPS diperbarui', 'success');
+                }
+            });
+        }
+
+        function deleteTps() {
+            if (selectedTpsIds.size === 0) {
+                return Swal.fire('Peringatan', 'Pilih minimal 1 TPS untuk dihapus', 'info');
+            }
+            Swal.fire({
+                title: 'Hapus TPS?',
+                text: `${selectedTpsIds.size} TPS akan dihapus`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c'
+            }).then(res => {
+                if (res.isConfirmed) {
+                    tpsData = tpsData.filter(t => !selectedTpsIds.has(t.id));
+                    selectedTpsIds.clear();
+                    updateAllMarkers();
+                    renderSidebar();
+                    clearRoute();
+                    markUnsavedChanges();
+                    Swal.fire('Terhapus!', 'TPS berhasil dihapus', 'success');
+                }
+            });
+        }
+
+        function saveDataPermanently() {
+            if (!hasUnsavedChanges) {
+                Swal.fire({
+                    title: 'ℹ️ Tidak Ada Perubahan',
+                    text: 'Tidak ada perubahan data yang perlu disimpan',
+                    icon: 'info',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+                return;
+            }
+            
+            saveDataToStorage(true).then(() => {
+                clearUnsavedIndicator();
+            }).catch(() => {});
+        }
+
+        function multiRouteOptimize() {
+            if (selectedTpsIds.size === 0) {
+                return Swal.fire('Peringatan', 'Pilih minimal 1 TPS untuk rute', 'info');
+            }
+            const selectedTpsList = tpsData.filter(t => selectedTpsIds.has(t.id));
+            const waypoints = selectedTpsList.map(t => L.latLng(t.lat, t.lng));
+            waypoints.push(L.latLng(TPA.lat, TPA.lng));
+            showMultiRoute(waypoints);
+            Swal.fire('Sukses!', `Rute optimal untuk ${selectedTpsList.length} TPS`, 'success');
+        }
+
+        // ======================= GEOLOKASI LIVE TRACKING =======================
+        function updateUserLocationMarker(latlng) {
+            currentUserLocation = {
+                lat: latlng.lat,
+                lng: latlng.lng
+            };
+            
+            if (userLocationMarker) {
+                userLocationMarker.setLatLng(latlng);
+                userLocationMarker.setPopupContent(`<b>📍 Lokasi Anda</b><br>🟢 Live Tracking aktif`);
+            } else {
+                userLocationMarker = L.marker(latlng, {
+                    icon: L.divIcon({
+                        html: '<div style="background:#3498db; width:18px; height:18px; border-radius:50%; border:2px solid white; box-shadow:0 0 0 3px rgba(52,152,219,0.5);"></div>',
+                        iconSize: [18, 18],
+                        className: 'user-location-marker'
+                    })
+                }).bindPopup(`<b>📍 Lokasi Anda</b><br>🟢 Live Tracking aktif`).addTo(map);
+            }
+        }
+
+        function stopLocationTracking() {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            isTrackingActive = false;
+            
+            const locationBtn = document.getElementById('locationBtn');
+            locationBtn.innerHTML = '<i class="fas fa-location-dot"></i> Lokasi';
+            locationBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+            
+            Swal.fire({
+                title: 'Tracking Berhenti',
+                text: 'Lokasi tidak akan mengikuti pergerakan',
+                icon: 'info',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }
+
+        function startLocationTracking() {
+            if (!navigator.geolocation) {
+                Swal.fire('Error', 'Browser tidak mendukung geolokasi', 'error');
+                return;
+            }
+            
+            if (watchId !== null) {
+                stopLocationTracking();
+            }
+            
+            watchId = navigator.geolocation.watchPosition(
+                (position) => {
+                    const latlng = L.latLng(position.coords.latitude, position.coords.longitude);
+                    updateUserLocationMarker(latlng);
+                    
+                    if (!isTrackingActive) {
+                        map.setView(latlng, 15);
+                        Swal.fire({
+                            title: 'Live Tracking Aktif!',
+                            text: 'Peta akan mengikuti pergerakan Anda',
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    }
+                    
+                    isTrackingActive = true;
+                    
+                    if (routingControl && routeFromUserActive) {
+                        const currentWaypoints = routingControl.getWaypoints();
+                        if (currentWaypoints && currentWaypoints.length > 0) {
+                            currentWaypoints[0] = L.latLng(latlng.lat, latlng.lng);
+                            routingControl.setWaypoints(currentWaypoints);
+                        }
+                    }
+                },
+                (error) => {
+                    let errorMessage = 'Gagal mendapatkan lokasi. ';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage += 'Izin lokasi ditolak.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage += 'Informasi lokasi tidak tersedia.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage += 'Waktu permintaan lokasi habis.';
+                            break;
+                        default:
+                            errorMessage += 'Terjadi kesalahan.';
+                    }
+                    Swal.fire('Gagal', errorMessage, 'error');
+                    stopLocationTracking();
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+            
+            const locationBtn = document.getElementById('locationBtn');
+            locationBtn.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Tracking';
+            locationBtn.style.background = '#27ae60';
+        }
+
+        function locateUser() {
+            if (isTrackingActive && watchId !== null) {
+                stopLocationTracking();
+            } else {
+                startLocationTracking();
+            }
+        }
+
+        // ======================= DARK MODE =======================
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            document.body.classList.toggle('light-mode');
+            const btn = document.getElementById('darkModeBtn');
+            if (document.body.classList.contains('dark-mode')) {
+                btn.innerHTML = '<i class="fas fa-sun"></i> Light';
+            } else {
+                btn.innerHTML = '<i class="fas fa-moon"></i> Dark';
+            }
+        }
+
+        // ======================= TAMBAHAN TOMBOL =======================
+        function addExtraButtons() {
+            if (document.getElementById('routeFromUserBtn')) return;
+            
+            const multiRoutePanel = document.querySelector('.multi-route-panel');
+            if (multiRoutePanel) {
+                const buttonGroup = document.createElement('div');
+                buttonGroup.style.display = 'flex';
+                buttonGroup.style.gap = '8px';
+                buttonGroup.style.marginTop = '8px';
+                buttonGroup.style.flexDirection = 'column';
+                
+                buttonGroup.innerHTML = `
+                    <button class="btn-sm" id="routeFromUserBtn" style="background:#3498db; width:100%;">
+                        <i class="fas fa-location-dot"></i> 🚛 Rute dari Lokasi Saya
+                    </button>
+                    <button class="btn-sm" id="resetRouteBtn" style="background:#6c757d; width:100%;">
+                        <i class="fas fa-undo-alt"></i> Reset Rute
+                    </button>
+                    <button class="btn-sm" id="resetDataBtn" style="background:#e74c3c; width:100%;">
+                        <i class="fas fa-undo-alt"></i> Reset Data Default
+                    </button>
+                `;
+                
+                multiRoutePanel.appendChild(buttonGroup);
+                
+                document.getElementById('routeFromUserBtn').onclick = () => {
+                    routeFromUserActive = true;
+                    showRouteFromUserToSelectedTPS();
+                };
+                document.getElementById('resetRouteBtn').onclick = () => {
+                    routeFromUserActive = false;
+                    resetToNormalRoute();
+                };
+                document.getElementById('resetDataBtn').onclick = resetToDefaultData;
+            }
+        }
+
+        function warnBeforeUnload() {
+            window.addEventListener('beforeunload', (e) => {
+                if (hasUnsavedChanges) {
+                    e.preventDefault();
+                    e.returnValue = 'Anda memiliki perubahan data yang belum disimpan.';
+                    return e.returnValue;
+                }
+            });
+        }
+
+        // ======================= EVENT LISTENERS =======================
+        document.getElementById('addTpsBtn').onclick = addTps;
+        document.getElementById('editTpsBtn').onclick = editTps;
+        document.getElementById('deleteTpsBtn').onclick = deleteTps;
+        document.getElementById('multiRouteBtn').onclick = multiRouteOptimize;
+        document.getElementById('locationBtn').onclick = locateUser;
+        document.getElementById('darkModeBtn').onclick = toggleDarkMode;
+        document.getElementById('saveDataHeaderBtn').onclick = saveDataPermanently;
+        document.getElementById('searchInput').addEventListener('input', () => renderSidebar());
+        document.getElementById('sortBy').addEventListener('change', () => renderSidebar());
+
+        // ======================= INITIALIZATION =======================
+        loadDataFromStorage();
+        
+        window.onload = () => {
+            initMap();
+            renderSidebar();
+            addExtraButtons();
+            warnBeforeUnload();
+            
+            window.addEventListener('beforeunload', () => {
+                if (watchId !== null) {
+                    navigator.geolocation.clearWatch(watchId);
+                }
+            });
+        };
+        
+        window.tpsData = tpsData;
+        window.nextId = nextId;
+        window.TPA = TPA;
+    </script>
+</body>
+</html>
