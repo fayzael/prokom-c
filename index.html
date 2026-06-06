@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>WebGIS Pro - Manajemen Rute Truk Sampah Semarang</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet Routing Machine CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="light-mode">
+    <div class="header">
+        <button class="menu-toggle" id="menuToggleBtn">
+            <i class="fas fa-bars"></i> Menu
+        </button>
+        <div class="logo-area">
+            <h1><i class="fas fa-truck-fast"></i> WasteRoute Pro</h1>
+            <p>Semarang | Optimasi Rute TPS</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn-icon btn-save-header" id="saveDataHeaderBtn"><i class="fas fa-save"></i> Simpan</button>
+            <button class="btn-icon" id="locationBtn"><i class="fas fa-location-dot"></i> Lokasi</button>
+            <button class="btn-icon" id="darkModeBtn"><i class="fas fa-moon"></i> Mode</button>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-label">TPS</div>
+                    <div class="stat-value" id="totalTPS">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Pilih</div>
+                    <div class="stat-value" id="selectedCount">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3><i class="fas fa-dumpster"></i> Manajemen TPS</h3>
+                <p>Tambah/Edit/Hapus | Centang untuk rute</p>
+            </div>
+            <div class="filter-section">
+                <div class="filter-row">
+                    <select id="sortBy">
+                        <option value="name">Sortir: Nama A-Z</option>
+                        <option value="distance">Sortir: Jarak Terdekat</option>
+                        <option value="distanceFar">Sortir: Jarak Terjauh</option>
+                    </select>
+                    <input type="text" id="searchInput" placeholder="🔍 Cari TPS...">
+                </div>
+                <div class="crud-buttons">
+                    <button class="btn-crud btn-add" id="addTpsBtn"><i class="fas fa-plus"></i> Tambah</button>
+                    <button class="btn-crud btn-edit" id="editTpsBtn"><i class="fas fa-edit"></i> Edit</button>
+                    <button class="btn-crud btn-delete" id="deleteTpsBtn"><i class="fas fa-trash"></i> Hapus</button>
+                </div>
+                <div class="multi-route-panel">
+                    <button class="btn-sm" id="multiRouteBtn" style="width:100%; background:#e67e22;">
+                        <i class="fas fa-route"></i> 🚛 Optimasi Rute Multi-TPS
+                    </button>
+                    <small style="display:block; margin-top:6px; text-align:center;">✅ Centang TPS yang ingin dilewati</small>
+                </div>
+            </div>
+            <div class="tps-list" id="tpsListContainer">
+                <div style="text-align:center; padding:20px;">Memuat data TPS...</div>
+            </div>
+            <div class="legend">
+                <h4><i class="fas fa-map"></i> Legenda</h4>
+                <div class="legend-item">
+                    <div class="legend-color" style="background:#27ae60;"></div>
+                    <span>TPS (Lokasi Sampah)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background:#e74c3c;"></div>
+                    <span>TPA Jatibarang</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background:#f59e0b;"></div>
+                    <span>Rute Optimal</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background:#3498db;"></div>
+                    <span>📍 Live Tracking</span>
+                </div>
+            </div>
+        </div>
+        <div id="map"></div>
+    </div>
+
+    <!-- Warning untuk HTTPS/file protocol -->
+    <div class="https-warning" id="httpsWarning">
+        <i class="fas fa-exclamation-triangle"></i> 
+        <span id="warningMessage"></span>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet Routing Machine -->
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Data TPS -->
+    <script src="data.js"></script>
+    <!-- Main JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>
